@@ -1,0 +1,11 @@
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\bin\Release\Azimute.exe.config
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\bin\Release\Azimute.exe
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\bin\Release\Azimute.pdb
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\bin\Release\3DTools.dll
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimuth.csprojResolveAssemblyReference.cache
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimuth.frmAzimuth.resources
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimute.Properties.Resources.resources
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimuth.csproj.GenerateResource.Cache
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimute.exe
+C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimute.pdb
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.exe.config
