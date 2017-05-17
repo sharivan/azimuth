@@ -688,7 +688,7 @@ namespace Azimuth
             float theta1 = NormalizeRadians(p1p.Y);
             float phi1 = p1p.X / radius2D * (float) Math.PI;
 
-            // Check the distances between the first angle and second angle and exchange the values if necessary, otherwise the drawing will not work correctly.
+            // Check the distances between the first angle and second angle and exchange the values if necessary. Its necessary for we get the minimal path.
             if (Math.Abs(theta0 + 2 * (float)Math.PI - theta1) < Math.Abs(theta1 - theta0))
             {
                 float temp = theta0 + 2 * (float)Math.PI;
@@ -699,6 +699,10 @@ namespace Azimuth
                 phi0 = phi1;
                 phi1 = temp;
             }
+
+            // Just an angle correction applied to the destination coordinates.
+            if (0 <= theta1 && theta1 < theta0 - Math.PI)
+                theta1 += 2 * (float) Math.PI;
 
             // Compute the 3D cartesian coordinates of the first point (given by spherical coordinates).
             float sinPhi0 = (float) Math.Sin(phi0);
@@ -720,6 +724,7 @@ namespace Azimuth
             float B = (float) normal.Y;
             float C = (float) normal.Z;
 
+            bool flag = theta1 - theta0 > 0; // This boolean flag will be used bellow add or not the offset of phi angle.
             using (Graphics g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
@@ -737,11 +742,11 @@ namespace Azimuth
                         // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
                         float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
 
-                        // Just a correction to ensure the right value of phi due the periodicity of trigonometric functions.
-                        if (theta1 > theta0)
+                        // Just a correction to ensure the right value of phi. This offset is needed when the destination position angle is greater than source position angle.
+                        if (flag)
                             phi += (float)Math.PI;
 
-                        // Compute the 2D cartesian coordinates of azimuthal projection.
+                            // Compute the 2D cartesian coordinates of azimuthal projection.
                         PointF p = ToPointF(GetTextureCoordinate(theta, phi));
 
                         // Draw the iteration line.
