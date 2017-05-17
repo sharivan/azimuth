@@ -22,6 +22,10 @@ The program have a toolbar containing the following items:
 
 This project depends on the module 3DTools. You can download it at:
 
+http://3dtools.codeplex.com/releases/view/2058
+
+There is also a version of 3DTools hosted in my github page where you can download at:
+
 https://github.com/sharivan/3DTools
 
 Using the Visual Studio, add this project to your soluction and then add a reference to this project using the menu "Add>Reference..." before accessing the context menu by clicking at azimuth project in the Soluction Explorer.
