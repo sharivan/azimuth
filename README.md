@@ -20,7 +20,7 @@ The program have a toolbar containing the following items:
 	- Define framework: You can define the framework of the azimuthal projection, moving or resizing the area of the projection. Use the left click with the mouse to drag the projection area and use the right click to resize the projection area in the right panel.
 	- Change trace color: You can define the color used by tracing, applied to pencil, line and geodesic tracing.
 
-This program depends of the module 3DTools. You can download it at:
+This project depends on the module 3DTools. You can download it at:
 
 https://github.com/sharivan/3DTools
 
