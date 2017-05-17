@@ -18,7 +18,6 @@ namespace Azimuth
 {
     public partial class frmAzimuth : Form
     {
-        private const int fontSize = 20;
         private const float WHELL_SCALE_FACTOR = 1.1F;
 
         private readonly Point3D SPHERE_ORIGIN = new Point3D(0, 0, 0);
@@ -44,8 +43,10 @@ namespace Azimuth
         private bool drawingWithLine2D = false;
         private bool drawingWithGeodesic2D = false;
 
+        // Angle used to generate the morphism mesh between sphere and azimuthal projection.
         private float angle = 0;
 
+        // Sphere mesh divisions.
         private int tDiv = 100;
         private int pDiv = 100;
 
@@ -53,7 +54,6 @@ namespace Azimuth
         private Interactive3DDecorator interactive;
         private MeshGeometry3D mesh;
         private Viewport3D viewPort;
-        private InteractiveVisual3D interactiveVisual3D;
         private ModelVisual3D visual3D;
         private PerspectiveCamera camera;
         private float initialCameraDistance;
@@ -89,6 +89,7 @@ namespace Azimuth
                 null, pnl2D, new object[] { true });
         }
 
+        // Update the 3D model texture.
         private void Update3DBrush()
         {
             MemoryStream ms = new MemoryStream();
@@ -119,6 +120,7 @@ namespace Azimuth
             brush.ImageSource = bi;
         }
 
+        // Define the 3D model.
         private void DefineModel(Model3DGroup model_group)
         {
             BuildMesh();
@@ -194,11 +196,13 @@ namespace Azimuth
             initialCameraDistance = (float) cameraPos.Length();
         }
 
+        // Transform virtual (image) coordinates to real (visual) coordinates.
         private PointF V2R(PointF point)
         {
             return new PointF((float) ((point.X - center2D.X) * factor + pnl2D.ClientRectangle.Width / 2), (float) ((point.Y - center2D.Y) * factor + pnl2D.ClientRectangle.Height / 2));
         }
 
+        // Transform real coordinates to virtual coordinates.
         private PointF R2V(PointF point)
         {
             return new PointF((float)((point.X - pnl2D.ClientRectangle.Width / 2) / factor + center2D.X), (float)((point.Y - pnl2D.ClientRectangle.Height / 2) / factor + center2D.Y));
@@ -223,13 +227,20 @@ namespace Azimuth
                     size.Height * factor
                 );
  
+            // Draw the background.
             g.DrawImage(backgrondImage, dstRect, srcRect, GraphicsUnit.Pixel);
+
+            // Draw the foreground, containing the user traced lines.
             g.DrawImage(foregroundImage, dstRect, srcRect, GraphicsUnit.Pixel);
+
+            // Draw the current tracing (line or geodesic).
             g.DrawImage(drawingImage, dstRect, srcRect, GraphicsUnit.Pixel);
 
+            // If we defining the projection framework...
             if (btnDefineFramework.Checked)
                 using (Pen pen = new Pen(btnColor.BackColor, 2))
                 {
+                    // ...draw the framework.
                     g.DrawEllipse(pen, dstRect);
                     g.DrawLine(pen, dstRect.Left + dstRect.Width / 2, dstRect.Top, dstRect.Left + dstRect.Width / 2, dstRect.Top + dstRect.Height);
                     g.DrawLine(pen, dstRect.Left, dstRect.Top + dstRect.Height / 2, dstRect.Left + dstRect.Width, dstRect.Top + dstRect.Height / 2);
@@ -238,6 +249,8 @@ namespace Azimuth
 
         private void pnl2D_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
+            // Zoom in/out from mouse wheel event at the 2D panel;
+
             if (e.Delta == 0)
                 return;
 
@@ -255,6 +268,8 @@ namespace Azimuth
 
         private void pnl3D_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
         {
+            // Morphism defined by the mouse wheel event at the 3D panel.
+
             if (e.Delta == 0)
                 return;
 
@@ -268,6 +283,7 @@ namespace Azimuth
             UpdateMesh();
         }
 
+        // Clamp value to interval.
         public static double Clamp(double val, double min, double max)
         {
             if (val < min)
@@ -279,16 +295,19 @@ namespace Azimuth
             return val;
         }
 
+        // Transform degrees to radians.
         private static float DegToRad(float degrees)
         {
             return (float) (degrees * Math.PI / 180F);
         }
 
+        // Transform radians to degrees.
         private static float RadToDeg(float radians)
         {
             return (float) (radians * 180 / Math.PI);
         }
 
+        // Normalize an angle in degress to the range 0 to 360.
         private static float NormalizeDeegress(float degrees)
         {
             float modulus = Math.Abs(degrees) % 360;
@@ -298,6 +317,7 @@ namespace Azimuth
             return modulus;
         }
 
+        // Normalize an angle in radians to the range 0 to 2pi.
         private static float NormalizeRadians(float radians)
         {
             float modulus = Math.Abs(radians) % (float) (2 * Math.PI);
@@ -307,6 +327,7 @@ namespace Azimuth
             return modulus;
         }
 
+        // Transform spherical coordinates of a point above the sphere surface to 3D cartesian coordinates. The parameter alpha is the angle of morphism between the sphere and its azimuthal projection.
         private static Point3D GetPosition(double alpha, double theta, double phi)
         {
             double alphaDivisor = 1 - alpha / Math.PI;
@@ -334,6 +355,7 @@ namespace Azimuth
             return new Point3D(x, y, z);
         }
 
+        // Convert polar coordinates to cartesian 2D coordinates.
         internal static Point GetPosition(double radius, double theta)
         {
             double x = radius * Math.Cos(theta);
@@ -342,6 +364,7 @@ namespace Azimuth
             return new Point(x, y);
         }
 
+        // Compute the normal vector of spherical surface at point defined by spherical coordinates.
         private static Vector3D GetNormal(double theta, double phi)
         {
             double x = Math.Cos(theta) * Math.Sin(phi);
@@ -351,12 +374,14 @@ namespace Azimuth
             return new Vector3D(x, y, z);
         }
 
+        // Compute the 2D cartesian coordinates of the azimuthal projection of spherical coordinates from a point above the spherical surface.
         private Point GetTextureCoordinate(double theta, double phi)
         {
             Point vec = GetPosition(phi * radius2D / Math.PI, theta);
             return new Point(vec.X + center2D.X, center2D.Y - vec.Y);
         }
 
+        // Build the 3D mesh. It will be always a spherical surfuce when angle >= 0 and angle < 360. When angle == 360 the mesh will be a circle representing the azimuthal projection.
         internal void BuildMesh()
         {
             double dt = DegToRad(360F) / tDiv;
@@ -377,7 +402,7 @@ namespace Azimuth
 
                     mesh.Positions.Add(GetPosition(alpha, theta, phi));
                     mesh.Normals.Add(GetNormal(theta, phi));
-                    mesh.TextureCoordinates.Add(GetTextureCoordinate(theta, phi));
+                    mesh.TextureCoordinates.Add(GetTextureCoordinate(theta, phi)); // Here is the transformation from azimutal 2D coordinates to 3D coordinates.
                 }
             }
 
@@ -401,6 +426,7 @@ namespace Azimuth
             }
         }
 
+        // Update the 3D mesh.
         internal void UpdateMesh()
         {
             double dt = DegToRad(360F) / tDiv;
@@ -553,6 +579,7 @@ namespace Azimuth
             lastY = startY;
         }
 
+        // Convert decimal degrees to a string containing the degrees, minutes and seconds.
         private static string DegToDegMinSec(float degrees)
         {
             int seconds = (int) Math.Abs(degrees * 3600);
@@ -581,6 +608,7 @@ namespace Azimuth
             float latitude = 90 - RadToDeg(phi0);
             float longitude = RadToDeg(theta0) + 90;
 
+            // Show in status bar the geographic coordinates of the mouse position above the azimuthal projection (2D panel).
             tsslText.Text = "Latitute: " + DegToDegMinSec(Math.Abs(latitude)) + (latitude > 0 ? "N" : latitude < 0 ? "S" : "") + " Longitude: " + DegToDegMinSec(Math.Abs(longitude)) + (longitude > 0 ? "E" : longitude < 0 ? "W" : "");
 
             int dx = e.X - lastX;
@@ -634,6 +662,7 @@ namespace Azimuth
             lastY = e.Y;
         }
 
+        // Transform 2D cartesian coordinates to polar coordinates
         private PointF ToPolar(PointF p)
         {
             return new PointF((float) Math.Sqrt(p.X * p.X + p.Y * p.Y), (float) Math.Atan2(p.Y, p.X));
@@ -644,31 +673,22 @@ namespace Azimuth
             return new PointF((float) p.X, (float) p.Y);
         }
 
+        // Draw a geodesic curve between the points p0 and p1.
         private void DrawGeodesic(PointF p0, PointF p1)
         {
+            // Convert the points to polar coordinates.
             PointF p0p = ToPolar(new PointF((float) (p0.X - center2D.X), (float) (center2D.Y - p0.Y)));
             PointF p1p = ToPolar(new PointF((float) (p1.X - center2D.X), (float) (center2D.Y - p1.Y)));
 
-            float theta0 = p0p.Y;
+            // Compute the spherical coordinates of the first point.
+            float theta0 = NormalizeRadians(p0p.Y);
             float phi0 = p0p.X / radius2D * (float) Math.PI;
-            if (phi0 < 0)
-            {
-                phi0 = -phi0;
-                theta0 += (float) Math.PI;
-            }
 
-            theta0 = NormalizeRadians(theta0);
-
-            float theta1 = p1p.Y;
+            // Compute the spherical coordinates of the second point.
+            float theta1 = NormalizeRadians(p1p.Y);
             float phi1 = p1p.X / radius2D * (float) Math.PI;
-            if (phi1 < 0)
-            {
-                phi1 = -phi1;
-                theta1 += (float)Math.PI;
-            }
 
-            theta1 = NormalizeRadians(theta1);
-
+            // Check the distances between the first angle and second angle and exchange the values if necessary, otherwise the drawing will not work correctly.
             if (Math.Abs(theta0 + 2 * (float)Math.PI - theta1) < Math.Abs(theta1 - theta0))
             {
                 float temp = theta0 + 2 * (float)Math.PI;
@@ -680,18 +700,22 @@ namespace Azimuth
                 phi1 = temp;
             }
 
+            // Compute the 3D cartesian coordinates of the first point (given by spherical coordinates).
             float sinPhi0 = (float) Math.Sin(phi0);
             float x0 = SPHERE_RADIUS * (float) Math.Cos(theta0) * sinPhi0;
             float y0 = SPHERE_RADIUS * (float) Math.Sin(theta0) * sinPhi0;
             float z0 = SPHERE_RADIUS * (float) Math.Cos(phi0);
 
+            // Compute the 3D cartesian coordinates of the second point (given by spherical coordinates).
             float sinPhi1 = (float) Math.Sin(phi1);
             float x1 = SPHERE_RADIUS * (float) Math.Cos(theta1) * sinPhi1;
             float y1 = SPHERE_RADIUS * (float) Math.Sin(theta1) * sinPhi1;
             float z1 = SPHERE_RADIUS * (float) Math.Cos(phi1);
 
+            // Compute the normal vector of two vectors defined by the 3D points.
             Vector3D normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
 
+            // Compute the coeficients of the plane Ax + By + Cz = 0 passing by the origin of the sphere. The geodesic curve is the intersection of this plane whith the sphere.
             float A = (float) normal.X;
             float B = (float) normal.Y;
             float C = (float) normal.Z;
@@ -701,29 +725,29 @@ namespace Azimuth
                 g.Clear(System.Drawing.Color.Transparent);
                 using (Pen pen = new Pen(btnColor.BackColor, 2))
                 {
-                    /*if (Math.Abs(C) < EPSLON)
+                    PointF lastP = ToPointF(GetTextureCoordinate(theta0, phi0));
+
+                    // Lets start the draw iteration...
+                    for (int i = 0; i < 101; i++)
                     {
-                        g.DrawLine(pen, ToPointF(GetTextureCoordinate(theta0, phi0)), ToPointF(GetTextureCoordinate(theta1, phi1)));
-                    }
-                    else*/
-                    {
-                        PointF lastP = ToPointF(GetTextureCoordinate(theta0, phi0));
-                        for (int i = 0; i < 101; i++)
-                        {
-                            float t = i / 100F;
+                        float dt = i / 100F; // delta theta
 
-                            float theta = theta0 * (1 - t) + theta1 * t;
-                            float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
+                        float theta = theta0 * (1 - dt) + theta1 * dt;
 
-                            if (theta1 > theta0)
-                                phi += (float)Math.PI;
+                        // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
+                        float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
 
-                            PointF p = ToPointF(GetTextureCoordinate(theta, phi));
+                        // Just a correction to ensure the right value of phi due the periodicity of trigonometric functions.
+                        if (theta1 > theta0)
+                            phi += (float)Math.PI;
 
-                            g.DrawLine(pen, lastP, new PointF(p.X + 1, p.Y + 1));
+                        // Compute the 2D cartesian coordinates of azimuthal projection.
+                        PointF p = ToPointF(GetTextureCoordinate(theta, phi));
 
-                            lastP = p;
-                        }
+                        // Draw the iteration line.
+                        g.DrawLine(pen, lastP, new PointF(p.X + 1, p.Y + 1));
+
+                        lastP = p;
                     }
                 }
             }
