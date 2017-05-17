@@ -795,9 +795,10 @@ namespace Azimuth
                         }
                     }
 
-                    pnl2D.Invalidate();
-                    Update3DBrush();
+                    pnl2D.Invalidate();      
                 }
+
+                Update3DBrush();
             }
             else if (drawingWithLine2D)
             {
