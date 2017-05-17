@@ -9,3 +9,16 @@ C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimuth.csproj.Gene
 C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimute.exe
 C:\Users\miste\Documents\Projects\c#\vc#\Azimute\obj\Release\Azimute.pdb
 C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.exe.config
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.exe
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.pdb
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\3DTools.dll
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.csprojResolveAssemblyReference.cache
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.frmAzimuth.resources
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.Properties.Resources.resources
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.csproj.GenerateResource.Cache
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.exe
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.pdb
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.exe.manifest
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.application
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.exe.manifest
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.application

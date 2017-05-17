@@ -42,26 +42,26 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="3DTools.dll" size="61952">
-      <assemblyIdentity name="3DTools" version="1.0.6344.20163" language="neutral" processorArchitecture="msil" />
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="3DTools.dll" size="67072">
+      <assemblyIdentity name="3DTools" version="1.0.6344.20335" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>Dy7DF5VLp0qGATBonHpCubEsVIlS8XCAieWRiHsfEJk=</dsig:DigestValue>
+        <dsig:DigestValue>0qRMurcpVHa4/djyAreLg6tn1uKFF1VofzsZST1TZqc=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Azimuth.exe" size="1153984">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Azimuth.exe" size="1156544">
       <assemblyIdentity name="Azimuth" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>pktXVpA6EsAmZ1Fbhrq/fXTSE7BI8MoMC57cVWBRd/Y=</dsig:DigestValue>
+        <dsig:DigestValue>p1REwQZwBc0Yvj64Q3Rz3WsdAeKlxPYTvRIWKyZWdx0=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

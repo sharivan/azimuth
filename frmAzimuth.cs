@@ -13,7 +13,6 @@ using Pen = System.Drawing.Pen;
 using Image = System.Drawing.Image;
 
 using _3DTools;
-using System.Collections.Generic;
 
 namespace Azimuth
 {
@@ -88,16 +87,6 @@ namespace Azimuth
             typeof(System.Windows.Forms.Panel).InvokeMember("DoubleBuffered",
                 BindingFlags.SetProperty | BindingFlags.Instance | BindingFlags.NonPublic,
                 null, pnl2D, new object[] { true });
-        }
-
-        private al.Vector3D GetCameraVector()
-        {
-            return new al.Vector3D(camera.Position.X, camera.Position.Y, camera.Position.Z);
-        }
-
-        private void SetCameraVector(al.Vector3D vec)
-        {
-            camera.Position = new Point3D(vec.X, vec.Y, vec.Z);
         }
 
         private void Update3DBrush()
@@ -300,11 +289,20 @@ namespace Azimuth
             return (float) (radians * 180 / Math.PI);
         }
 
-        private static float NormalizeAngle(float angle)
+        private static float NormalizeDeegress(float degrees)
         {
-            float modulus = Math.Abs(angle) % 360;
-            if (angle < 0)
+            float modulus = Math.Abs(degrees) % 360;
+            if (degrees < 0)
                 return 360 - modulus;
+
+            return modulus;
+        }
+
+        private static float NormalizeRadians(float radians)
+        {
+            float modulus = Math.Abs(radians) % (float) (2 * Math.PI);
+            if (radians < 0)
+                return 2 * (float) Math.PI - modulus;
 
             return modulus;
         }
@@ -505,7 +503,8 @@ namespace Azimuth
                     {
                         using (Pen pen = new Pen(btnColor.BackColor, 2))
                         {
-                            g.DrawLine(pen, R2V(new PointF(startX, startY)), R2V(new PointF(startX, startY)));
+                            PointF v = R2V(new PointF(startX, startY));
+                            g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
                         }
                     }
 
@@ -520,7 +519,8 @@ namespace Azimuth
                         g.Clear(System.Drawing.Color.Transparent);
                         using (Pen pen = new Pen(btnColor.BackColor, 2))
                         {
-                            g.DrawLine(pen, R2V(new PointF(startX, startY)), R2V(new PointF(startX, startY)));
+                            PointF v = R2V(new PointF(startX, startY));
+                            g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
                         }
                     }
 
@@ -535,7 +535,8 @@ namespace Azimuth
                         g.Clear(System.Drawing.Color.Transparent);
                         using (Pen pen = new Pen(btnColor.BackColor, 2))
                         {
-                            g.DrawLine(pen, R2V(new PointF(startX, startY)), R2V(new PointF(startX, startY)));
+                            PointF v = R2V(new PointF(startX, startY));
+                            g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
                         }
                     }
 
@@ -570,8 +571,9 @@ namespace Azimuth
             if (e.X == lastX && e.Y == lastY)
                 return;
 
-            PointF v = R2V(new PointF(e.X, e.Y));
-            PointF p = ToPolar(new PointF((float)(v.X - center2D.X), (float)(center2D.Y - v.Y)));
+            PointF end = R2V(new PointF(e.X, e.Y));
+
+            PointF p = ToPolar(new PointF((float)(end.X - center2D.X), (float)(center2D.Y - end.Y)));
 
             float theta0 = p.Y;
             float phi0 = p.X / radius2D * (float) Math.PI;
@@ -600,7 +602,8 @@ namespace Azimuth
                 {
                     using (Pen pen = new Pen(btnColor.BackColor, 2))
                     {
-                        g.DrawLine(pen, R2V(new PointF(lastX, lastY)), v);
+                        PointF start = R2V(new PointF(lastX, lastY));
+                        g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
                     }
                 }
 
@@ -613,7 +616,8 @@ namespace Azimuth
                     g.Clear(System.Drawing.Color.Transparent);
                     using (Pen pen = new Pen(btnColor.BackColor, 2))
                     {
-                        g.DrawLine(pen, R2V(new PointF(startX, startY)), v);
+                        PointF start = R2V(new PointF(startX, startY));
+                        g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
                     }
                 }
 
@@ -621,7 +625,8 @@ namespace Azimuth
             }
             else if (drawingWithGeodesic2D)
             {
-                DrawGeodesic(R2V(new PointF(startX, startY)), v);
+                PointF start = R2V(new PointF(startX, startY));
+                DrawGeodesic(start, end);
                 pnl2D.Invalidate();
             }
 
@@ -641,13 +646,39 @@ namespace Azimuth
 
         private void DrawGeodesic(PointF p0, PointF p1)
         {
-            p0 = ToPolar(new PointF((float) (p0.X - center2D.X), (float) (center2D.Y - p0.Y)));
-            p1 = ToPolar(new PointF((float) (p1.X - center2D.X), (float) (center2D.Y - p1.Y)));
+            PointF p0p = ToPolar(new PointF((float) (p0.X - center2D.X), (float) (center2D.Y - p0.Y)));
+            PointF p1p = ToPolar(new PointF((float) (p1.X - center2D.X), (float) (center2D.Y - p1.Y)));
 
-            float theta0 = p0.Y;
-            float phi0 = p0.X / radius2D * (float) Math.PI;
-            float theta1 = p1.Y;
-            float phi1 = p1.X / radius2D * (float) Math.PI;
+            float theta0 = p0p.Y;
+            float phi0 = p0p.X / radius2D * (float) Math.PI;
+            if (phi0 < 0)
+            {
+                phi0 = -phi0;
+                theta0 += (float) Math.PI;
+            }
+
+            theta0 = NormalizeRadians(theta0);
+
+            float theta1 = p1p.Y;
+            float phi1 = p1p.X / radius2D * (float) Math.PI;
+            if (phi1 < 0)
+            {
+                phi1 = -phi1;
+                theta1 += (float)Math.PI;
+            }
+
+            theta1 = NormalizeRadians(theta1);
+
+            if (Math.Abs(theta0 + 2 * (float)Math.PI - theta1) < Math.Abs(theta1 - theta0))
+            {
+                float temp = theta0 + 2 * (float)Math.PI;
+                theta0 = theta1;
+                theta1 = temp;
+
+                temp = phi0;
+                phi0 = phi1;
+                phi1 = temp;
+            }
 
             float sinPhi0 = (float) Math.Sin(phi0);
             float x0 = SPHERE_RADIUS * (float) Math.Cos(theta0) * sinPhi0;
@@ -665,38 +696,34 @@ namespace Azimuth
             float B = (float) normal.Y;
             float C = (float) normal.Z;
 
-            if (Math.Abs(theta0 + 2 * (float)Math.PI - theta1) < Math.Abs(theta0 - theta1))
-                theta0 += 2 * (float)Math.PI;
-
-            if (Math.Abs(phi0 + 2 * (float)Math.PI - phi1) < Math.Abs(phi0 - phi1))
-                phi0 += 2 * (float)Math.PI;
-
-            float phiMin = Math.Min(phi0, phi1);
-            float phiMax = Math.Max(phi0, phi1);
-
             using (Graphics g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
                 using (Pen pen = new Pen(btnColor.BackColor, 2))
                 {
-                    PointF lastP = ToPointF(GetTextureCoordinate(theta0, phi0));
-                    for (int i = 0; i < 100; i++)
+                    /*if (Math.Abs(C) < EPSLON)
                     {
-                        float t = i / 100F;
+                        g.DrawLine(pen, ToPointF(GetTextureCoordinate(theta0, phi0)), ToPointF(GetTextureCoordinate(theta1, phi1)));
+                    }
+                    else*/
+                    {
+                        PointF lastP = ToPointF(GetTextureCoordinate(theta0, phi0));
+                        for (int i = 0; i < 101; i++)
+                        {
+                            float t = i / 100F;
 
-                        float theta = theta0 * (1 - t) + theta1 * t;
-                        float phi = (float) Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
+                            float theta = theta0 * (1 - t) + theta1 * t;
+                            float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
 
-                        /*if (phi < phiMin)
-                            phi += 2 * (float)Math.PI;
-                        else if (phi > phiMax)
-                            phi -= 2 * (float)Math.PI;*/
+                            if (theta1 > theta0)
+                                phi += (float)Math.PI;
 
-                        PointF p = ToPointF(GetTextureCoordinate(theta, phi));
+                            PointF p = ToPointF(GetTextureCoordinate(theta, phi));
 
-                        g.DrawLine(pen, lastP, p);
+                            g.DrawLine(pen, lastP, new PointF(p.X + 1, p.Y + 1));
 
-                        lastP = p;
+                            lastP = p;
+                        }
                     }
                 }
             }
@@ -727,16 +754,21 @@ namespace Azimuth
             {
                 drawingWithPencil2D = false;
 
-                using (Graphics g = Graphics.FromImage(foregroundImage))
+                PointF start = R2V(new PointF(lastX, lastY));
+                PointF end = R2V(new PointF(e.X, e.Y));
+                if (start != end)
                 {
-                    using (Pen pen = new Pen(btnColor.BackColor, 2))
+                    using (Graphics g = Graphics.FromImage(foregroundImage))
                     {
-                        g.DrawLine(pen, R2V(new PointF(lastX, lastY)), R2V(new PointF(e.X, e.Y)));
+                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        {
+                            g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                        }
                     }
-                }
 
-                pnl2D.Invalidate();
-                Update3DBrush();
+                    pnl2D.Invalidate();
+                    Update3DBrush();
+                }
             }
             else if (drawingWithLine2D)
             {
@@ -744,10 +776,15 @@ namespace Azimuth
 
                 using (Graphics g = Graphics.FromImage(drawingImage))
                 {
-                    g.Clear(System.Drawing.Color.Transparent);
-                    using (Pen pen = new Pen(btnColor.BackColor, 2))
+                    PointF start = R2V(new PointF(startX, startY));
+                    PointF end = R2V(new PointF(e.X, e.Y));
+                    if (start != end)
                     {
-                        g.DrawLine(pen, R2V(new PointF(startX, startY)), R2V(new PointF(e.X, e.Y)));
+                        g.Clear(System.Drawing.Color.Transparent);
+                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        {
+                            g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                        }
                     }
 
                     using (Graphics g2 = Graphics.FromImage(foregroundImage))
@@ -765,7 +802,10 @@ namespace Azimuth
             {
                 drawingWithGeodesic2D = false;
 
-                DrawGeodesic(R2V(new PointF(startX, startY)), R2V(new PointF(e.X, e.Y)));
+                PointF start = R2V(new PointF(startX, startY));
+                PointF end = R2V(new PointF(e.X, e.Y));
+                if (start != end)
+                    DrawGeodesic(start, end);
 
                 using (Graphics g = Graphics.FromImage(foregroundImage))
                 {
