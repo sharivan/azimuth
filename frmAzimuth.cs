@@ -673,6 +673,8 @@ namespace Azimuth
             return new PointF((float) p.X, (float) p.Y);
         }
 
+        private PointF[] points = new PointF[101];
+
         // Draw a geodesic curve between the points p0 and p1.
         private void DrawGeodesic(PointF p0, PointF p1)
         {
@@ -725,35 +727,30 @@ namespace Azimuth
             float C = (float) normal.Z;
 
             bool flag = theta1 - theta0 > 0; // This boolean flag will be used bellow add or not the offset of phi angle.
+            // Compute the curve points. The curve will be divided by 100 parts (containing 101 points).
+            for (int i = 0; i <= 100; i++)
+            {
+                float dt = i / 100F; // delta theta
+                float theta = theta0 * (1 - dt) + theta1 * dt;
+
+                // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
+                float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
+
+                // Just a correction to ensure the right value of phi. This offset is needed when the destination position angle is greater than source position angle.
+                if (flag)
+                    phi += (float)Math.PI;
+
+                // Compute the 2D cartesian coordinates of azimuthal projection.
+                points[i] = ToPointF(GetTextureCoordinate(theta, phi));
+            }
+
+            // Draw the curve points.
             using (Graphics g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
                 using (Pen pen = new Pen(btnColor.BackColor, 2))
                 {
-                    PointF lastP = ToPointF(GetTextureCoordinate(theta0, phi0));
-
-                    // Lets start the draw iteration...
-                    for (int i = 0; i < 101; i++)
-                    {
-                        float dt = i / 100F; // delta theta
-
-                        float theta = theta0 * (1 - dt) + theta1 * dt;
-
-                        // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
-                        float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
-
-                        // Just a correction to ensure the right value of phi. This offset is needed when the destination position angle is greater than source position angle.
-                        if (flag)
-                            phi += (float)Math.PI;
-
-                            // Compute the 2D cartesian coordinates of azimuthal projection.
-                        PointF p = ToPointF(GetTextureCoordinate(theta, phi));
-
-                        // Draw the iteration line.
-                        g.DrawLine(pen, lastP, new PointF(p.X + 1, p.Y + 1));
-
-                        lastP = p;
-                    }
+                    g.DrawLines(pen, points);
                 }
             }
         }
