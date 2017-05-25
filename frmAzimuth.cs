@@ -16,6 +16,12 @@ using _3DTools;
 
 namespace Azimuth
 {
+    public enum ProjectionType
+    {
+        AZIMUTHAL = 0,
+        MERCATOR = 1
+    }
+
     public partial class frmAzimuth : Form
     {
         private const float WHELL_SCALE_FACTOR = 1.1F;
@@ -24,24 +30,27 @@ namespace Azimuth
         private const float SPHERE_RADIUS = 1;
         private const float EPSLON = 0.001F;
 
+        private ProjectionType projectionType = ProjectionType.AZIMUTHAL;
+
         private Image backgrondImage;
         private Image foregroundImage;
         private Image drawingImage;
 
-        private float scale2D = 1;
-        private Point center2D;
-        private float radius2D;
+        private float scale = 1;
+        private Point center;
+        private float radiusX;
+        private float radiusY;
         private float factor = 1;
 
         private int startX = 0;
         private int startY = 0;
         private int lastX = 0;
         private int lastY = 0;
-        private bool moving2D = false;
-        private bool resizing2D = false;
-        private bool drawingWithPencil2D = false;
-        private bool drawingWithLine2D = false;
-        private bool drawingWithGeodesic2D = false;
+        private bool moving = false;
+        private bool resizing = false;
+        private bool drawingWithPencil = false;
+        private bool drawingWithLine = false;
+        private bool drawingWithGeodesic = false;
 
         // Angle used to generate the morphism mesh between sphere and azimuthal projection.
         private float angle = 0;
@@ -60,9 +69,15 @@ namespace Azimuth
         private Model3DGroup mainModel3Dgroup;
         private ImageBrush brush;
 
+        private PointF[] points = new PointF[101];
+
+        private frmProjectionTypeDialog openDialog;
+
         public frmAzimuth()
         {
             InitializeComponent();
+
+            openDialog = new frmProjectionTypeDialog();
 
             pnl2D.MouseWheel += pnl2D_MouseWheel;
             pnl3D.MouseWheel += pnl3D_MouseWheel;
@@ -93,23 +108,25 @@ namespace Azimuth
         private void Update3DBrush()
         {
             MemoryStream ms = new MemoryStream();
-            Bitmap target = new Bitmap((int) (2 * radius2D), (int) (2 * radius2D));
-            using (Graphics g = Graphics.FromImage(target))
+            using (Bitmap target = new Bitmap((int) (2 * radiusX), (int) (2 * radiusY)))
             {
-                g.DrawImage(backgrondImage, new RectangleF(0, 0, target.Width, target.Height),
-                    new RectangleF((float) center2D.X - radius2D, (float) center2D.Y - radius2D, 2 * radius2D, 2 * radius2D),
-                    GraphicsUnit.Pixel);
+                using (Graphics g = Graphics.FromImage(target))
+                {
+                    g.DrawImage(backgrondImage, new RectangleF(0, 0, target.Width, target.Height),
+                        new RectangleF((float) center.X - radiusX, (float) center.Y - radiusY, 2 * radiusX, 2 * radiusY),
+                        GraphicsUnit.Pixel);
 
-                g.DrawImage(foregroundImage, new RectangleF(0, 0, target.Width, target.Height),
-                    new RectangleF((float)center2D.X - radius2D, (float)center2D.Y - radius2D, 2 * radius2D, 2 * radius2D),
-                    GraphicsUnit.Pixel);
+                    g.DrawImage(foregroundImage, new RectangleF(0, 0, target.Width, target.Height),
+                        new RectangleF((float) center.X - radiusX, (float) center.Y - radiusY, 2 * radiusX, 2 * radiusY),
+                        GraphicsUnit.Pixel);
 
-                g.DrawImage(drawingImage, new RectangleF(0, 0, target.Width, target.Height),
-                    new RectangleF((float)center2D.X - radius2D, (float)center2D.Y - radius2D, 2 * radius2D, 2 * radius2D),
-                    GraphicsUnit.Pixel);
+                    g.DrawImage(drawingImage, new RectangleF(0, 0, target.Width, target.Height),
+                        new RectangleF((float) center.X - radiusX, (float) center.Y - radiusY, 2 * radiusX, 2 * radiusY),
+                        GraphicsUnit.Pixel);
+                }
+
+                target.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
             }
-
-            target.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
 
             BitmapImage bi = new BitmapImage();
             bi.BeginInit();
@@ -141,19 +158,44 @@ namespace Azimuth
             model_group.Children.Add(directional_light);
         }
 
+        private void Compute2DFields()
+        {
+            if (foregroundImage != null)
+                foregroundImage.Dispose();
+
+            foregroundImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
+
+            if (drawingImage != null)
+                drawingImage.Dispose();
+
+            drawingImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
+
+            center = new Point(drawingImage.Width / 2F, drawingImage.Height / 2F);
+
+            switch (projectionType)
+            {
+                case ProjectionType.AZIMUTHAL:
+                    radiusX = (float) Math.Min(center.X, center.Y);
+                    radiusY = radiusX;
+                    break;
+
+                case ProjectionType.MERCATOR:
+                    radiusX = (float) center.X;
+                    radiusY = (float) center.Y;
+                    break;
+            }
+
+            float factorX = (float) pnl2D.ClientRectangle.Width / drawingImage.Width;
+            float factorY = (float) pnl2D.ClientRectangle.Height / drawingImage.Height;
+            factor = Math.Min(factorX, factorY) / scale;
+        }
+
         private void frmAzimuth_Load(object sender, EventArgs e)
         {
             Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Azimuth.resources.azimuth1024x1024.png");
             backgrondImage = new Bitmap(stream);
-            foregroundImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
-            drawingImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
 
-            center2D = new Point(drawingImage.Width / 2F, drawingImage.Height / 2F);
-            radius2D = (float) Math.Min(center2D.X, center2D.Y);
-
-            float factorX = (float)pnl2D.ClientRectangle.Width / drawingImage.Width;
-            float factorY = (float)pnl2D.ClientRectangle.Height / drawingImage.Height;
-            factor = Math.Min(factorX, factorY) / scale2D;
+            Compute2DFields();
 
             camera = new PerspectiveCamera();
             camera.FieldOfView = 60;
@@ -199,13 +241,13 @@ namespace Azimuth
         // Transform virtual (image) coordinates to real (visual) coordinates.
         private PointF V2R(PointF point)
         {
-            return new PointF((float) ((point.X - center2D.X) * factor + pnl2D.ClientRectangle.Width / 2), (float) ((point.Y - center2D.Y) * factor + pnl2D.ClientRectangle.Height / 2));
+            return new PointF((float) ((point.X - center.X) * factor + pnl2D.ClientRectangle.Width / 2), (float) ((point.Y - center.Y) * factor + pnl2D.ClientRectangle.Height / 2));
         }
 
         // Transform real coordinates to virtual coordinates.
         private PointF R2V(PointF point)
         {
-            return new PointF((float)((point.X - pnl2D.ClientRectangle.Width / 2) / factor + center2D.X), (float)((point.Y - pnl2D.ClientRectangle.Height / 2) / factor + center2D.Y));
+            return new PointF((float) ((point.X - pnl2D.ClientRectangle.Width / 2) / factor + center.X), (float) ((point.Y - pnl2D.ClientRectangle.Height / 2) / factor + center.Y));
         }
 
         private void pnl2D_Paint(object sender, PaintEventArgs e)
@@ -215,18 +257,18 @@ namespace Azimuth
 
             float imageHalfWidth = drawingImage.Width / 2F;
             float imageHalfHeight = drawingImage.Height / 2F;
-            PointF srcLeftTop = new PointF((float) (center2D.X - radius2D), (float) (center2D.Y - radius2D));
-            PointF srcTopBottom = new PointF((float) (center2D.X + radius2D), (float) (center2D.Y + radius2D ));
+            PointF srcLeftTop = new PointF((float) (center.X - radiusX), (float) (center.Y - radiusY));
+            PointF srcTopBottom = new PointF((float) (center.X + radiusX), (float) (center.Y + radiusY));
             SizeF size = new SizeF(srcTopBottom.X - srcLeftTop.X, srcTopBottom.Y - srcLeftTop.Y);
             RectangleF srcRect = new RectangleF(srcLeftTop, size);
             RectangleF dstRect = new RectangleF
                 (
                     pnl2D.ClientRectangle.Width / 2 - size.Width * factor / 2,
                     pnl2D.ClientRectangle.Height / 2 - size.Height * factor / 2,
-                    size.Width * factor, 
+                    size.Width * factor,
                     size.Height * factor
                 );
- 
+
             // Draw the background.
             g.DrawImage(backgrondImage, dstRect, srcRect, GraphicsUnit.Pixel);
 
@@ -241,9 +283,20 @@ namespace Azimuth
                 using (Pen pen = new Pen(btnColor.BackColor, 2))
                 {
                     // ...draw the framework.
-                    g.DrawEllipse(pen, dstRect);
-                    g.DrawLine(pen, dstRect.Left + dstRect.Width / 2, dstRect.Top, dstRect.Left + dstRect.Width / 2, dstRect.Top + dstRect.Height);
-                    g.DrawLine(pen, dstRect.Left, dstRect.Top + dstRect.Height / 2, dstRect.Left + dstRect.Width, dstRect.Top + dstRect.Height / 2);
+                    switch (projectionType)
+                    {
+                        case ProjectionType.AZIMUTHAL:
+                            g.DrawEllipse(pen, dstRect);
+                            g.DrawLine(pen, dstRect.Left + dstRect.Width / 2, dstRect.Top, dstRect.Left + dstRect.Width / 2, dstRect.Top + dstRect.Height);
+                            g.DrawLine(pen, dstRect.Left, dstRect.Top + dstRect.Height / 2, dstRect.Left + dstRect.Width, dstRect.Top + dstRect.Height / 2);
+                            break;
+
+                        case ProjectionType.MERCATOR:
+                            g.DrawRectangle(pen, dstRect.X, dstRect.Y, dstRect.Width, dstRect.Height);
+                            g.DrawLine(pen, dstRect.Left + dstRect.Width / 2, dstRect.Top, dstRect.Left + dstRect.Width / 2, dstRect.Top + dstRect.Height);
+                            g.DrawLine(pen, dstRect.Left, dstRect.Top + dstRect.Height / 2, dstRect.Left + dstRect.Width, dstRect.Top + dstRect.Height / 2);
+                            break;
+                    }
                 }
         }
 
@@ -255,13 +308,13 @@ namespace Azimuth
                 return;
 
             if (e.Delta > 0)
-                scale2D /= WHELL_SCALE_FACTOR * e.Delta / SystemInformation.MouseWheelScrollDelta;
+                scale /= WHELL_SCALE_FACTOR * e.Delta / SystemInformation.MouseWheelScrollDelta;
             else
-                scale2D *= WHELL_SCALE_FACTOR * -e.Delta / SystemInformation.MouseWheelScrollDelta;
+                scale *= WHELL_SCALE_FACTOR * -e.Delta / SystemInformation.MouseWheelScrollDelta;
 
-            float factorX = (float)pnl2D.ClientRectangle.Width / drawingImage.Width;
-            float factorY = (float)pnl2D.ClientRectangle.Height / drawingImage.Height;
-            factor = Math.Min(factorX, factorY) / scale2D;
+            float factorX = (float) pnl2D.ClientRectangle.Width / drawingImage.Width;
+            float factorY = (float) pnl2D.ClientRectangle.Height / drawingImage.Height;
+            factor = Math.Min(factorX, factorY) / scale;
 
             pnl2D.Invalidate();
         }
@@ -307,31 +360,45 @@ namespace Azimuth
             return (float) (radians * 180 / Math.PI);
         }
 
+        // Normalize an angle in degress to the range offset to offset + 360.
+        private static float NormalizeDeegress(float degrees, float offset)
+        {
+            degrees -= offset;
+            float modulus = Math.Abs(degrees) % 360;
+            if (degrees < 0)
+                return 360 - modulus + offset;
+
+            return modulus + offset;
+        }
+
         // Normalize an angle in degress to the range 0 to 360.
         private static float NormalizeDeegress(float degrees)
         {
-            float modulus = Math.Abs(degrees) % 360;
-            if (degrees < 0)
-                return 360 - modulus;
+            return NormalizeDeegress(degrees, 0);
+        }
 
-            return modulus;
+        // Normalize an angle in radians to the range offset to offset + 2pi.
+        private static float NormalizeRadians(float radians, float offset)
+        {
+            radians -= offset;
+            float modulus = Math.Abs(radians) % (float) (2 * Math.PI);
+            if (radians < 0)
+                return 2 * (float) Math.PI - modulus + offset;
+
+            return modulus + offset;
         }
 
         // Normalize an angle in radians to the range 0 to 2pi.
         private static float NormalizeRadians(float radians)
         {
-            float modulus = Math.Abs(radians) % (float) (2 * Math.PI);
-            if (radians < 0)
-                return 2 * (float) Math.PI - modulus;
-
-            return modulus;
+            return NormalizeRadians(radians, 0);
         }
 
         // Transform spherical coordinates of a point above the sphere surface to 3D cartesian coordinates. The parameter alpha is the angle of morphism between the sphere and its azimuthal projection.
         private static Point3D GetPosition(double alpha, double theta, double phi)
         {
             double alphaDivisor = 1 - alpha / Math.PI;
-            
+
             double x;
             double y;
             double z;
@@ -374,14 +441,33 @@ namespace Azimuth
             return new Vector3D(x, y, z);
         }
 
-        // Compute the 2D cartesian coordinates of the azimuthal projection of spherical coordinates from a point above the spherical surface.
+        // Compute the 2D cartesian coordinates of the projection of spherical coordinates from a point above the spherical surface.
         private Point GetTextureCoordinate(double theta, double phi)
         {
-            Point vec = GetPosition(phi * radius2D / Math.PI, theta);
-            return new Point(vec.X + center2D.X, center2D.Y - vec.Y);
+            switch (projectionType)
+            {
+                case ProjectionType.AZIMUTHAL:
+                    {
+                        Point vec = GetPosition(phi * radiusX / Math.PI, theta);
+                        return new Point(center.X + vec.X, center.Y - vec.Y);
+                    }
+
+                case ProjectionType.MERCATOR:
+                    {
+                        if (phi <= Math.PI - 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX)))
+                            return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - radiusY);
+
+                        if (phi >= 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX)))
+                            return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y + radiusY);
+
+                        return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - Math.Log(Math.Tan((Math.PI - phi) / 2)) * radiusX / Math.PI);
+                    }
+            }
+
+            return new Point(0, 0);
         }
 
-        // Build the 3D mesh. It will be always a spherical surfuce when angle >= 0 and angle < 360. When angle == 360 the mesh will be a circle representing the azimuthal projection.
+        // Build the 3D mesh. It will be always a spherical surfuce when angle >= 0 and angle < 360. When angle == 360 the mesh will be a circle representing the projection.
         internal void BuildMesh()
         {
             double dt = DegToRad(360F) / tDiv;
@@ -402,7 +488,7 @@ namespace Azimuth
 
                     mesh.Positions.Add(GetPosition(alpha, theta, phi));
                     mesh.Normals.Add(GetNormal(theta, phi));
-                    mesh.TextureCoordinates.Add(GetTextureCoordinate(theta, phi)); // Here is the transformation from azimutal 2D coordinates to 3D coordinates.
+                    mesh.TextureCoordinates.Add(GetTextureCoordinate(theta, phi)); // Here is the transformation from selected 2D projection coordinates to 3D coordinates.
                 }
             }
 
@@ -454,32 +540,21 @@ namespace Azimuth
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            DialogResult dr = openFileDlg.ShowDialog();
+            openDialog.ProjectionType = projectionType;
+            DialogResult dr = openDialog.ShowDialog();
             if (dr == DialogResult.OK)
             {
+                projectionType = openDialog.ProjectionType;
+
                 if (backgrondImage != null)
                     backgrondImage.Dispose();
 
-                backgrondImage = Image.FromFile(openFileDlg.FileName);
+                backgrondImage = Image.FromFile(openDialog.FileName);
 
-                if (foregroundImage != null)
-                    foregroundImage.Dispose();
-
-                foregroundImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
-
-                if (drawingImage != null)
-                    drawingImage.Dispose();
-
-                drawingImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
-
-                center2D = new Point(backgrondImage.Width / 2F, backgrondImage.Height / 2F);
-                radius2D = (float)Math.Min(center2D.X, center2D.Y);
-
-                float factorX = (float)pnl2D.ClientRectangle.Width / drawingImage.Width;
-                float factorY = (float)pnl2D.ClientRectangle.Height / drawingImage.Height;
-                factor = Math.Min(factorX, factorY) / scale2D;
+                Compute2DFields();
 
                 pnl2D.Invalidate();
+                UpdateMesh();
                 Update3DBrush();
             }
         }
@@ -505,9 +580,9 @@ namespace Azimuth
             pnl2D.Width = clientWidth / 2;
             pnl2D.Height = clientHeight;
 
-            float factorX = (float)pnl2D.ClientRectangle.Width / drawingImage.Width;
-            float factorY = (float)pnl2D.ClientRectangle.Height / drawingImage.Height;
-            factor = Math.Min(factorX, factorY) / scale2D;
+            float factorX = (float) pnl2D.ClientRectangle.Width / drawingImage.Width;
+            float factorY = (float) pnl2D.ClientRectangle.Height / drawingImage.Height;
+            factor = Math.Min(factorX, factorY) / scale;
 
             pnl2D.Invalidate();
         }
@@ -520,10 +595,10 @@ namespace Azimuth
             if (e.Button == MouseButtons.Left)
             {
                 if (btnDefineFramework.Checked)
-                    moving2D = true;
+                    moving = true;
                 else if (btnPencil.Checked)
                 {
-                    drawingWithPencil2D = true;
+                    drawingWithPencil = true;
 
                     using (Graphics g = Graphics.FromImage(foregroundImage))
                     {
@@ -538,41 +613,17 @@ namespace Azimuth
                 }
                 else if (btnLine.Checked)
                 {
-                    drawingWithLine2D = true;
-
-                    using (Graphics g = Graphics.FromImage(drawingImage))
-                    {
-                        g.Clear(System.Drawing.Color.Transparent);
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
-                        {
-                            PointF v = R2V(new PointF(startX, startY));
-                            g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
-                        }
-                    }
-
-                    pnl2D.Invalidate();
+                    drawingWithLine = true;
                 }
                 else if (btnGeodesic.Checked)
                 {
-                    drawingWithGeodesic2D = true;
-
-                    using (Graphics g = Graphics.FromImage(drawingImage))
-                    {
-                        g.Clear(System.Drawing.Color.Transparent);
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
-                        {
-                            PointF v = R2V(new PointF(startX, startY));
-                            g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
-                        }
-                    }
-
-                    pnl2D.Invalidate();
+                    drawingWithGeodesic = true;
                 }
             }
             else if (e.Button == MouseButtons.Right)
             {
                 if (btnDefineFramework.Checked)
-                    resizing2D = true;
+                    resizing = true;
             }
 
             lastX = startX;
@@ -600,44 +651,72 @@ namespace Azimuth
 
             PointF end = R2V(new PointF(e.X, e.Y));
 
-            PointF p = ToPolar(new PointF((float)(end.X - center2D.X), (float)(center2D.Y - end.Y)));
+            float theta0 = 0;
+            float phi0 = 0;
 
-            float theta0 = p.Y;
-            float phi0 = p.X / radius2D * (float) Math.PI;
+            switch (projectionType)
+            {
+                case ProjectionType.AZIMUTHAL:
+                    {
+                        PointF p = ToPolar(new PointF((float) (end.X - center.X), (float) (center.Y - end.Y)));
+                        theta0 = p.Y;
+                        phi0 = p.X / radiusX * (float) Math.PI;
+                        break;
+                    }
+
+                case ProjectionType.MERCATOR:
+                    {
+                        theta0 = (float) ((end.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2);
+                        
+                        if (end.Y >= center.Y)
+                            phi0 = (float) (2 * Math.Atan(Math.Exp((end.Y - center.Y) * Math.PI / radiusX)));
+                        else
+                            phi0 = (float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - end.Y) * Math.PI / radiusX)));
+
+                        break;
+                    }
+            }
 
             float latitude = 90 - RadToDeg(phi0);
             float longitude = RadToDeg(theta0) + 90;
 
-            // Show in status bar the geographic coordinates of the mouse position above the azimuthal projection (2D panel).
+            // Show in status bar the geographic coordinates of the mouse position above the projection (2D panel).
             tsslText.Text = "Latitute: " + DegToDegMinSec(Math.Abs(latitude)) + (latitude > 0 ? "N" : latitude < 0 ? "S" : "") + " Longitude: " + DegToDegMinSec(Math.Abs(longitude)) + (longitude > 0 ? "E" : longitude < 0 ? "W" : "");
 
             int dx = e.X - lastX;
             int dy = e.Y - lastY;
 
-            if (moving2D)
+            if (moving)
             {
-                center2D.Offset(dx, dy);
+                center.Offset(dx, dy);
                 pnl2D.Invalidate();
             }
-            else if (resizing2D)
+            else if (resizing)
             {
-                radius2D += dx;
+                radiusX += dx / 2F;
+
+                if (projectionType == ProjectionType.MERCATOR)
+                {
+                    radiusY += dy / 2F;
+                    center.Offset(dx / 2F, dy / 2F);
+                }
+
                 pnl2D.Invalidate();
             }
-            else if (drawingWithPencil2D)
+            else if (drawingWithPencil)
             {
                 using (Graphics g = Graphics.FromImage(foregroundImage))
                 {
                     using (Pen pen = new Pen(btnColor.BackColor, 2))
                     {
                         PointF start = R2V(new PointF(lastX, lastY));
-                        g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                        g.DrawLine(pen, start, end);
                     }
                 }
 
                 pnl2D.Invalidate();
             }
-            else if (drawingWithLine2D)
+            else if (drawingWithLine)
             {
                 using (Graphics g = Graphics.FromImage(drawingImage))
                 {
@@ -645,16 +724,27 @@ namespace Azimuth
                     using (Pen pen = new Pen(btnColor.BackColor, 2))
                     {
                         PointF start = R2V(new PointF(startX, startY));
-                        g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                        g.DrawLine(pen, start, end);
                     }
                 }
 
                 pnl2D.Invalidate();
             }
-            else if (drawingWithGeodesic2D)
+            else if (drawingWithGeodesic)
             {
                 PointF start = R2V(new PointF(startX, startY));
-                DrawGeodesic(start, end);
+
+                switch (projectionType)
+                {
+                    case ProjectionType.AZIMUTHAL:
+                        DrawGeodesicAzimuthal(start, end);
+                        break;
+
+                    case ProjectionType.MERCATOR:
+                        DrawGeodesicMercator(start, end);
+                        break;
+                }
+
                 pnl2D.Invalidate();
             }
 
@@ -673,27 +763,25 @@ namespace Azimuth
             return new PointF((float) p.X, (float) p.Y);
         }
 
-        private PointF[] points = new PointF[101];
-
-        // Draw a geodesic curve between the points p0 and p1.
-        private void DrawGeodesic(PointF p0, PointF p1)
+        // Draw a geodesic curve on azimutal projection between the points p0 and p1.
+        private void DrawGeodesicAzimuthal(PointF p0, PointF p1)
         {
             // Convert the points to polar coordinates.
-            PointF p0p = ToPolar(new PointF((float) (p0.X - center2D.X), (float) (center2D.Y - p0.Y)));
-            PointF p1p = ToPolar(new PointF((float) (p1.X - center2D.X), (float) (center2D.Y - p1.Y)));
+            PointF p0p = ToPolar(new PointF((float) (p0.X - center.X), (float) (center.Y - p0.Y)));
+            PointF p1p = ToPolar(new PointF((float) (p1.X - center.X), (float) (center.Y - p1.Y)));
 
             // Compute the spherical coordinates of the first point.
             float theta0 = NormalizeRadians(p0p.Y);
-            float phi0 = p0p.X / radius2D * (float) Math.PI;
+            float phi0 = p0p.X / radiusX * (float) Math.PI;
 
             // Compute the spherical coordinates of the second point.
             float theta1 = NormalizeRadians(p1p.Y);
-            float phi1 = p1p.X / radius2D * (float) Math.PI;
+            float phi1 = p1p.X / radiusX * (float) Math.PI;
 
             // Check the distances between the first angle and second angle and exchange the values if necessary. Its necessary for we get the minimal path.
-            if (Math.Abs(theta0 + 2 * (float)Math.PI - theta1) < Math.Abs(theta1 - theta0))
+            if (Math.Abs(theta0 + 2 * (float) Math.PI - theta1) < Math.Abs(theta1 - theta0))
             {
-                float temp = theta0 + 2 * (float)Math.PI;
+                float temp = theta0 + 2 * (float) Math.PI;
                 theta0 = theta1;
                 theta1 = temp;
 
@@ -726,7 +814,7 @@ namespace Azimuth
             float B = (float) normal.Y;
             float C = (float) normal.Z;
 
-            bool flag = theta1 - theta0 > 0; // This boolean flag will be used bellow add or not the offset of phi angle.
+            bool flag = theta1 > theta0; // This boolean flag will be used bellow add or not the offset of phi angle.
             // Compute the curve points. The curve will be divided by 100 parts (containing 101 points).
             for (int i = 0; i <= 100; i++)
             {
@@ -734,11 +822,11 @@ namespace Azimuth
                 float theta = theta0 * (1 - dt) + theta1 * dt;
 
                 // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
-                float phi = (float)Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
+                float phi = (float) Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
 
                 // Just a correction to ensure the right value of phi. This offset is needed when the destination position angle is greater than source position angle.
                 if (flag)
-                    phi += (float)Math.PI;
+                    phi += (float) Math.PI;
 
                 // Compute the 2D cartesian coordinates of azimuthal projection.
                 points[i] = ToPointF(GetTextureCoordinate(theta, phi));
@@ -755,6 +843,117 @@ namespace Azimuth
             }
         }
 
+        // Draw a geodesic curve on Mercator projection between the points p0 and p1.
+        private void DrawGeodesicMercator(PointF p0, PointF p1)
+        {
+            // Compute the spherical coordinates of the first point.
+            float theta0 = NormalizeRadians((float) ((p0.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2));
+
+            float phi0;
+            if (p0.Y >= center.Y)
+                phi0 = NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p0.Y - center.Y) * Math.PI / radiusX))));
+            else
+                phi0 = NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p0.Y) * Math.PI / radiusX))));
+
+            // Compute the spherical coordinates of the second point.
+            float theta1 = NormalizeRadians((float) ((p1.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2));
+
+            float phi1;
+            if (p1.Y >= center.Y)
+                phi1 = NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p1.Y - center.Y) * Math.PI / radiusX))));
+            else
+                phi1 = NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p1.Y) * Math.PI / radiusX))));
+
+            // Check the distances between the first angle and second angle and exchange the values if necessary. Its necessary for we get the minimal path.
+            if (Math.Abs(theta0 + 2 * (float) Math.PI - theta1) < Math.Abs(theta1 - theta0))
+            {
+                float temp = theta0 + 2 * (float) Math.PI;
+                theta0 = theta1;
+                theta1 = temp;
+
+                temp = phi0;
+                phi0 = phi1;
+                phi1 = temp;
+            }
+
+            // Just an angle correction applied to the destination coordinates.
+            if (0 <= theta1 && theta1 < theta0 - Math.PI)
+                theta1 += 2 * (float) Math.PI;
+
+            // Compute the 3D cartesian coordinates of the first point (given by spherical coordinates).
+            float sinPhi0 = (float) Math.Sin(phi0);
+            float x0 = SPHERE_RADIUS * (float) Math.Cos(theta0) * sinPhi0;
+            float y0 = SPHERE_RADIUS * (float) Math.Sin(theta0) * sinPhi0;
+            float z0 = SPHERE_RADIUS * (float) Math.Cos(phi0);
+
+            // Compute the 3D cartesian coordinates of the second point (given by spherical coordinates).
+            float sinPhi1 = (float) Math.Sin(phi1);
+            float x1 = SPHERE_RADIUS * (float) Math.Cos(theta1) * sinPhi1;
+            float y1 = SPHERE_RADIUS * (float) Math.Sin(theta1) * sinPhi1;
+            float z1 = SPHERE_RADIUS * (float) Math.Cos(phi1);
+
+            // Compute the normal vector of two vectors defined by the 3D points.
+            Vector3D normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
+
+            // Compute the coeficients of the plane Ax + By + Cz = 0 passing by the origin of the sphere. The geodesic curve is the intersection of this plane whith the sphere.
+            float A = (float) normal.X;
+            float B = (float) normal.Y;
+            float C = (float) normal.Z;
+
+            using (Graphics g = Graphics.FromImage(drawingImage))
+            {
+                g.Clear(System.Drawing.Color.Transparent);
+            }
+
+            bool flag = theta1 > theta0; // This boolean flag will be used bellow add or not the offset of phi angle.
+            float lastTheta = theta0;
+            int j = 0;
+            while (j <= 100)
+            {
+                PointF[] points = j == 0 ? this.points : new PointF[101 - j];
+
+                // Compute the curve points. The curve will be divided by 100 parts (containing 101 points).
+                for (int i = 0; i < points.Length && j < this.points.Length; i++, j++)
+                {
+                    float dt = j / 100F; // delta theta
+                    float theta = theta0 * (1 - dt) + theta1 * dt;
+
+                    // The soluction of the plane intersection with the sphere, given by spherical coordinates, is given by the bellow expression, with radius fixed and theta varying.
+                    float phi = (float) Math.Atan2(-C, A * Math.Cos(theta) + B * Math.Sin(theta));
+
+                    // Just a correction to ensure the right value of phi. This offset is needed when the destination position angle is greater than source position angle.
+                    if (flag)
+                        phi += (float) Math.PI;
+
+                    if (Math.Abs(NormalizeRadians(theta, -3 * (float) Math.PI / 2) - NormalizeRadians(lastTheta, -3 * (float) Math.PI / 2)) > Math.PI)
+                    {
+                        PointF[] _points = new PointF[i];
+                        Array.Copy(points, _points, i);
+                        points = _points;
+                        lastTheta = theta;
+                        break;
+                    }
+
+                    // Compute the 2D cartesian coordinates of Mercator projection.
+                    points[i] = ToPointF(GetTextureCoordinate(NormalizeRadians(theta, (float) Math.PI / 2), phi));
+
+                    lastTheta = theta;
+                }
+
+                if (points.Length > 1)
+                {
+                    // Draw the curve points.
+                    using (Graphics g = Graphics.FromImage(drawingImage))
+                    {
+                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        {
+                            g.DrawLines(pen, points);
+                        }
+                    }
+                }
+            }
+        }
+
         private void pnl2D_MouseUp(object sender, MouseEventArgs e)
         {
             int dx = e.X - lastX;
@@ -762,23 +961,27 @@ namespace Azimuth
             lastX = e.X;
             lastY = e.Y;
 
-            if (moving2D)
+            if (moving)
             {
-                moving2D = false;
-                center2D.Offset(dx, dy);
+                moving = false;
+                center.Offset(dx, dy);
                 pnl2D.Invalidate();
                 Update3DBrush();
             }
-            else if (resizing2D)
+            else if (resizing)
             {
-                resizing2D = false;
-                radius2D += dx;
+                resizing = false;
+                radiusX += dx;
+
+                if (projectionType == ProjectionType.MERCATOR)
+                    radiusY += dy;
+
                 pnl2D.Invalidate();
                 Update3DBrush();
             }
-            else if (drawingWithPencil2D)
+            else if (drawingWithPencil)
             {
-                drawingWithPencil2D = false;
+                drawingWithPencil = false;
 
                 PointF start = R2V(new PointF(lastX, lastY));
                 PointF end = R2V(new PointF(e.X, e.Y));
@@ -788,18 +991,18 @@ namespace Azimuth
                     {
                         using (Pen pen = new Pen(btnColor.BackColor, 2))
                         {
-                            g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                            g.DrawLine(pen, start, end);
                         }
                     }
 
-                    pnl2D.Invalidate();      
+                    pnl2D.Invalidate();
                 }
 
                 Update3DBrush();
             }
-            else if (drawingWithLine2D)
+            else if (drawingWithLine)
             {
-                drawingWithLine2D = false;
+                drawingWithLine = false;
 
                 using (Graphics g = Graphics.FromImage(drawingImage))
                 {
@@ -810,7 +1013,7 @@ namespace Azimuth
                         g.Clear(System.Drawing.Color.Transparent);
                         using (Pen pen = new Pen(btnColor.BackColor, 2))
                         {
-                            g.DrawLine(pen, start, new PointF(end.X + 1, end.Y + 1));
+                            g.DrawLine(pen, start, end);
                         }
                     }
 
@@ -825,14 +1028,25 @@ namespace Azimuth
                 pnl2D.Invalidate();
                 Update3DBrush();
             }
-            else if (drawingWithGeodesic2D)
+            else if (drawingWithGeodesic)
             {
-                drawingWithGeodesic2D = false;
+                drawingWithGeodesic = false;
 
                 PointF start = R2V(new PointF(startX, startY));
                 PointF end = R2V(new PointF(e.X, e.Y));
                 if (start != end)
-                    DrawGeodesic(start, end);
+                {
+                    switch (projectionType)
+                    {
+                        case ProjectionType.AZIMUTHAL:
+                            DrawGeodesicAzimuthal(start, end);
+                            break;
+
+                        case ProjectionType.MERCATOR:
+                            DrawGeodesicMercator(start, end);
+                            break;
+                    }
+                }
 
                 using (Graphics g = Graphics.FromImage(foregroundImage))
                 {

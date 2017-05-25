@@ -42,13 +42,12 @@
             this.btnSelection = new System.Windows.Forms.ToolStripButton();
             this.btnPencil = new System.Windows.Forms.ToolStripButton();
             this.btnLine = new System.Windows.Forms.ToolStripButton();
-            this.btnDefineFramework = new System.Windows.Forms.ToolStripButton();
-            this.openFileDlg = new System.Windows.Forms.OpenFileDialog();
-            this.btnClear = new System.Windows.Forms.ToolStripButton();
             this.btnGeodesic = new System.Windows.Forms.ToolStripButton();
+            this.btnDefineFramework = new System.Windows.Forms.ToolStripButton();
+            this.btnClear = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.colorDlg = new System.Windows.Forms.ColorDialog();
             this.btnColor = new System.Windows.Forms.ToolStripButton();
+            this.colorDlg = new System.Windows.Forms.ColorDialog();
             this.pnl3D.SuspendLayout();
             this.ssStatusBar.SuspendLayout();
             this.tbToolBar.SuspendLayout();
@@ -167,6 +166,16 @@
             this.btnLine.ToolTipText = "Linha Reta";
             this.btnLine.Click += new System.EventHandler(this.btnLine_Click);
             // 
+            // btnGeodesic
+            // 
+            this.btnGeodesic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnGeodesic.Image = ((System.Drawing.Image)(resources.GetObject("btnGeodesic.Image")));
+            this.btnGeodesic.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnGeodesic.Name = "btnGeodesic";
+            this.btnGeodesic.Size = new System.Drawing.Size(23, 22);
+            this.btnGeodesic.Text = "Geodésica";
+            this.btnGeodesic.Click += new System.EventHandler(this.btnGeodesic_Click);
+            // 
             // btnDefineFramework
             // 
             this.btnDefineFramework.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -187,24 +196,10 @@
             this.btnClear.Text = "Limpar";
             this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             // 
-            // btnGeodesic
-            // 
-            this.btnGeodesic.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnGeodesic.Image = ((System.Drawing.Image)(resources.GetObject("btnGeodesic.Image")));
-            this.btnGeodesic.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnGeodesic.Name = "btnGeodesic";
-            this.btnGeodesic.Size = new System.Drawing.Size(23, 22);
-            this.btnGeodesic.Text = "Geodésica";
-            this.btnGeodesic.Click += new System.EventHandler(this.btnGeodesic_Click);
-            // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
-            // 
-            // colorDlg
-            // 
-            this.colorDlg.Color = System.Drawing.Color.Red;
             // 
             // btnColor
             // 
@@ -216,6 +211,10 @@
             this.btnColor.Size = new System.Drawing.Size(23, 22);
             this.btnColor.ToolTipText = "Cor do traçado";
             this.btnColor.Click += new System.EventHandler(this.btnColor_Click);
+            // 
+            // colorDlg
+            // 
+            this.colorDlg.Color = System.Drawing.Color.Red;
             // 
             // frmAzimuth
             // 
@@ -254,7 +253,6 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripButton btnSelection;
         private System.Windows.Forms.ToolStripButton btnPencil;
-        private System.Windows.Forms.OpenFileDialog openFileDlg;
         private System.Windows.Forms.ToolStripButton btnLine;
         private System.Windows.Forms.ToolStripButton btnDefineFramework;
         private System.Windows.Forms.ToolStripButton btnClear;

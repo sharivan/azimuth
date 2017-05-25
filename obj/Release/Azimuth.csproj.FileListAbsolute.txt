@@ -22,3 +22,4 @@ C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.exe.manifes
 C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\bin\Release\Azimuth.application
 C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.exe.manifest
 C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.application
+C:\Users\miste\Documents\Projects\c#\vc#\Azimuth\obj\Release\Azimuth.frmProjectionTypeDialog.resources
