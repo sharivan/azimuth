@@ -1,25 +1,29 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
+using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
-using System.IO;
-using System.Reflection;
 using System.Windows.Media.Imaging;
-
-using Point = System.Windows.Point;
-using Pen = System.Drawing.Pen;
-using Image = System.Drawing.Image;
+using System.Windows.Media.Media3D;
 
 using _3DTools;
+
+using Image = System.Drawing.Image;
+using Pen = System.Drawing.Pen;
+using Point = System.Windows.Point;
 
 namespace Azimuth
 {
     public enum ProjectionType
     {
-        AZIMUTHAL = 0,
-        MERCATOR = 1
+        AZIMUTHAL = 0, // Projeção Azimutal
+        MERCATOR = 1, // Projeção de Mercator
+        EQUIRECTANGULAR = 2, // Projeção Cilíndrica Equidistante
+        PETERS = 3, // Projeção de Peters
+        LAMBERT = 4, // Projeção de Lambert
+        ROBINSON = 5, // Projeção de Robinson
     }
 
     public partial class frmAzimuth : Form
@@ -82,18 +86,24 @@ namespace Azimuth
             pnl2D.MouseWheel += pnl2D_MouseWheel;
             pnl3D.MouseWheel += pnl3D_MouseWheel;
 
-            decorator = new TrackballDecorator();
-            decorator.Width = wpf3DHost.Width;
-            decorator.Height = wpf3DHost.Height;
+            decorator = new TrackballDecorator
+            {
+                Width = wpf3DHost.Width,
+                Height = wpf3DHost.Height
+            };
 
-            interactive = new Interactive3DDecorator();
-            interactive.Width = wpf3DHost.Width;
-            interactive.Height = wpf3DHost.Height;
-            interactive.ContainsInk = true;
+            interactive = new Interactive3DDecorator
+            {
+                Width = wpf3DHost.Width,
+                Height = wpf3DHost.Height,
+                ContainsInk = true
+            };
 
-            viewPort = new Viewport3D();
-            viewPort.Width = wpf3DHost.Width;
-            viewPort.Height = wpf3DHost.Height;
+            viewPort = new Viewport3D
+            {
+                Width = wpf3DHost.Width,
+                Height = wpf3DHost.Height
+            };
 
             interactive.Content = viewPort;
             decorator.Content = interactive;
@@ -107,10 +117,10 @@ namespace Azimuth
         // Update the 3D model texture.
         private void Update3DBrush()
         {
-            MemoryStream ms = new MemoryStream();
-            using (Bitmap target = new Bitmap((int) (2 * radiusX), (int) (2 * radiusY)))
+            var ms = new MemoryStream();
+            using (var target = new Bitmap((int) (2 * radiusX), (int) (2 * radiusY)))
             {
-                using (Graphics g = Graphics.FromImage(target))
+                using (var g = Graphics.FromImage(target))
                 {
                     g.DrawImage(backgrondImage, new RectangleF(0, 0, target.Width, target.Height),
                         new RectangleF((float) center.X - radiusX, (float) center.Y - radiusY, 2 * radiusX, 2 * radiusY),
@@ -128,7 +138,7 @@ namespace Azimuth
                 target.Save(ms, System.Drawing.Imaging.ImageFormat.Bmp);
             }
 
-            BitmapImage bi = new BitmapImage();
+            var bi = new BitmapImage();
             bi.BeginInit();
             ms.Seek(0, SeekOrigin.Begin);
             bi.StreamSource = ms;
@@ -143,16 +153,18 @@ namespace Azimuth
             BuildMesh();
             brush = new ImageBrush();
             Update3DBrush();
-            DiffuseMaterial material = new DiffuseMaterial(brush);
-            GeometryModel3D model = new GeometryModel3D(mesh, material);
-            model.BackMaterial = material;
+            var material = new DiffuseMaterial(brush);
+            var model = new GeometryModel3D(mesh, material)
+            {
+                BackMaterial = material
+            };
             model_group.Children.Add(model);
         }
 
         private void DefineLights(Model3DGroup model_group)
         {
-            AmbientLight ambient_light = new AmbientLight(Colors.Gray);
-            DirectionalLight directional_light =
+            var ambient_light = new AmbientLight(Colors.Gray);
+            var directional_light =
                 new DirectionalLight(Colors.Gray, new Vector3D(-1.0, -3.0, -2.0));
             model_group.Children.Add(ambient_light);
             model_group.Children.Add(directional_light);
@@ -160,13 +172,11 @@ namespace Azimuth
 
         private void Compute2DFields()
         {
-            if (foregroundImage != null)
-                foregroundImage.Dispose();
+            foregroundImage?.Dispose();
 
             foregroundImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
 
-            if (drawingImage != null)
-                drawingImage.Dispose();
+            drawingImage?.Dispose();
 
             drawingImage = new Bitmap(backgrondImage.Width, backgrondImage.Height);
 
@@ -197,8 +207,10 @@ namespace Azimuth
 
             Compute2DFields();
 
-            camera = new PerspectiveCamera();
-            camera.FieldOfView = 60;
+            camera = new PerspectiveCamera
+            {
+                FieldOfView = 60
+            };
             viewPort.Camera = camera;
             PositionCamera();
 
@@ -206,14 +218,16 @@ namespace Azimuth
             DefineLights(mainModel3Dgroup);
             DefineModel(mainModel3Dgroup);
 
-            visual3D = new ModelVisual3D();
-            visual3D.Content = mainModel3Dgroup;
+            visual3D = new ModelVisual3D
+            {
+                Content = mainModel3Dgroup
+            };
 
             viewPort.Children.Add(visual3D);
 
-            Transform3DGroup transformGroup = new Transform3DGroup();
-            RotateTransform3D myRotateTransform3D = new RotateTransform3D();
-            AxisAngleRotation3D myAxisRotation3d = new AxisAngleRotation3D(new Vector3D(0, 0, 1), 0);
+            var transformGroup = new Transform3DGroup();
+            var myRotateTransform3D = new RotateTransform3D();
+            var myAxisRotation3d = new AxisAngleRotation3D(new Vector3D(0, 0, 1), 0);
 
             myRotateTransform3D.CenterX = SPHERE_ORIGIN.X;
             myRotateTransform3D.CenterY = SPHERE_ORIGIN.Y;
@@ -222,7 +236,7 @@ namespace Azimuth
 
             transformGroup.Children.Add(myRotateTransform3D);
 
-            TranslateTransform3D translateTransform = new TranslateTransform3D(new Vector3D(0, 0, 0));
+            var translateTransform = new TranslateTransform3D(new Vector3D(0, 0, 0));
             transformGroup.Children.Add(myRotateTransform3D);
 
             mainModel3Dgroup.Transform = transformGroup;
@@ -234,7 +248,7 @@ namespace Azimuth
             camera.LookDirection = new Vector3D(0, 0, -1);
             camera.UpDirection = new Vector3D(0, 1, 0);
 
-            al.Vector3D cameraPos = new al.Vector3D(camera.Position.X, camera.Position.Y, camera.Position.Z);
+            var cameraPos = new al.Vector3D(camera.Position.X, camera.Position.Y, camera.Position.Z);
             initialCameraDistance = (float) cameraPos.Length();
         }
 
@@ -257,11 +271,11 @@ namespace Azimuth
 
             float imageHalfWidth = drawingImage.Width / 2F;
             float imageHalfHeight = drawingImage.Height / 2F;
-            PointF srcLeftTop = new PointF((float) (center.X - radiusX), (float) (center.Y - radiusY));
-            PointF srcTopBottom = new PointF((float) (center.X + radiusX), (float) (center.Y + radiusY));
-            SizeF size = new SizeF(srcTopBottom.X - srcLeftTop.X, srcTopBottom.Y - srcLeftTop.Y);
-            RectangleF srcRect = new RectangleF(srcLeftTop, size);
-            RectangleF dstRect = new RectangleF
+            var srcLeftTop = new PointF((float) (center.X - radiusX), (float) (center.Y - radiusY));
+            var srcTopBottom = new PointF((float) (center.X + radiusX), (float) (center.Y + radiusY));
+            var size = new SizeF(srcTopBottom.X - srcLeftTop.X, srcTopBottom.Y - srcLeftTop.Y);
+            var srcRect = new RectangleF(srcLeftTop, size);
+            var dstRect = new RectangleF
                 (
                     pnl2D.ClientRectangle.Width / 2 - size.Width * factor / 2,
                     pnl2D.ClientRectangle.Height / 2 - size.Height * factor / 2,
@@ -280,7 +294,8 @@ namespace Azimuth
 
             // If we defining the projection framework...
             if (btnDefineFramework.Checked)
-                using (Pen pen = new Pen(btnColor.BackColor, 2))
+            {
+                using (var pen = new Pen(btnColor.BackColor, 2))
                 {
                     // ...draw the framework.
                     switch (projectionType)
@@ -298,6 +313,7 @@ namespace Azimuth
                             break;
                     }
                 }
+            }
         }
 
         private void pnl2D_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -339,13 +355,7 @@ namespace Azimuth
         // Clamp value to interval.
         public static double Clamp(double val, double min, double max)
         {
-            if (val < min)
-                return min;
-
-            if (val > max)
-                return max;
-
-            return val;
+            return val < min ? min : val > max ? max : val;
         }
 
         // Transform degrees to radians.
@@ -365,10 +375,7 @@ namespace Azimuth
         {
             degrees -= offset;
             float modulus = Math.Abs(degrees) % 360;
-            if (degrees < 0)
-                return 360 - modulus + offset;
-
-            return modulus + offset;
+            return degrees < 0 ? 360 - modulus + offset : modulus + offset;
         }
 
         // Normalize an angle in degress to the range 0 to 360.
@@ -382,10 +389,7 @@ namespace Azimuth
         {
             radians -= offset;
             float modulus = Math.Abs(radians) % (float) (2 * Math.PI);
-            if (radians < 0)
-                return 2 * (float) Math.PI - modulus + offset;
-
-            return modulus + offset;
+            return radians < 0 ? 2 * (float) Math.PI - modulus + offset : modulus + offset;
         }
 
         // Normalize an angle in radians to the range 0 to 2pi.
@@ -447,21 +451,19 @@ namespace Azimuth
             switch (projectionType)
             {
                 case ProjectionType.AZIMUTHAL:
-                    {
-                        Point vec = GetPosition(phi * radiusX / Math.PI, theta);
-                        return new Point(center.X + vec.X, center.Y - vec.Y);
-                    }
+                {
+                    Point vec = GetPosition(phi * radiusX / Math.PI, theta);
+                    return new Point(center.X + vec.X, center.Y - vec.Y);
+                }
 
                 case ProjectionType.MERCATOR:
-                    {
-                        if (phi <= Math.PI - 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX)))
-                            return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - radiusY);
-
-                        if (phi >= 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX)))
-                            return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y + radiusY);
-
-                        return new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - Math.Log(Math.Tan((Math.PI - phi) / 2)) * radiusX / Math.PI);
-                    }
+                {
+                    return phi <= Math.PI - 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX))
+                            ? new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - radiusY)
+                            : phi >= 2 * Math.Atan(Math.Exp(radiusY * Math.PI / radiusX))
+                            ? new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y + radiusY)
+                            : new Point(center.X - radiusX + (theta - Math.PI / 2) * radiusX / Math.PI, center.Y - Math.Log(Math.Tan((Math.PI - phi) / 2)) * radiusX / Math.PI);
+                }
             }
 
             return new Point(0, 0);
@@ -497,7 +499,7 @@ namespace Azimuth
                 for (int ti = 0; ti < tDiv; ti++)
                 {
                     int x0 = ti;
-                    int x1 = (ti + 1);
+                    int x1 = ti + 1;
                     int y0 = pi * (tDiv + 1);
                     int y1 = (pi + 1) * (tDiv + 1);
 
@@ -546,8 +548,7 @@ namespace Azimuth
             {
                 projectionType = openDialog.ProjectionType;
 
-                if (backgrondImage != null)
-                    backgrondImage.Dispose();
+                backgrondImage?.Dispose();
 
                 backgrondImage = Image.FromFile(openDialog.FileName);
 
@@ -595,14 +596,16 @@ namespace Azimuth
             if (e.Button == MouseButtons.Left)
             {
                 if (btnDefineFramework.Checked)
+                {
                     moving = true;
+                }
                 else if (btnPencil.Checked)
                 {
                     drawingWithPencil = true;
 
-                    using (Graphics g = Graphics.FromImage(foregroundImage))
+                    using (var g = Graphics.FromImage(foregroundImage))
                     {
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        using (var pen = new Pen(btnColor.BackColor, 2))
                         {
                             PointF v = R2V(new PointF(startX, startY));
                             g.DrawLine(pen, v, new PointF(v.X + 1, v.Y + 1));
@@ -657,24 +660,23 @@ namespace Azimuth
             switch (projectionType)
             {
                 case ProjectionType.AZIMUTHAL:
-                    {
-                        PointF p = ToPolar(new PointF((float) (end.X - center.X), (float) (center.Y - end.Y)));
-                        theta0 = p.Y;
-                        phi0 = p.X / radiusX * (float) Math.PI;
-                        break;
-                    }
+                {
+                    PointF p = ToPolar(new PointF((float) (end.X - center.X), (float) (center.Y - end.Y)));
+                    theta0 = p.Y;
+                    phi0 = p.X / radiusX * (float) Math.PI;
+                    break;
+                }
 
                 case ProjectionType.MERCATOR:
-                    {
-                        theta0 = (float) ((end.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2);
-                        
-                        if (end.Y >= center.Y)
-                            phi0 = (float) (2 * Math.Atan(Math.Exp((end.Y - center.Y) * Math.PI / radiusX)));
-                        else
-                            phi0 = (float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - end.Y) * Math.PI / radiusX)));
+                {
+                    theta0 = (float) ((end.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2);
 
-                        break;
-                    }
+                    phi0 = end.Y >= center.Y
+                        ? (float) (2 * Math.Atan(Math.Exp((end.Y - center.Y) * Math.PI / radiusX)))
+                        : (float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - end.Y) * Math.PI / radiusX)));
+
+                    break;
+                }
             }
 
             float latitude = 90 - RadToDeg(phi0);
@@ -705,9 +707,9 @@ namespace Azimuth
             }
             else if (drawingWithPencil)
             {
-                using (Graphics g = Graphics.FromImage(foregroundImage))
+                using (var g = Graphics.FromImage(foregroundImage))
                 {
-                    using (Pen pen = new Pen(btnColor.BackColor, 2))
+                    using (var pen = new Pen(btnColor.BackColor, 2))
                     {
                         PointF start = R2V(new PointF(lastX, lastY));
                         g.DrawLine(pen, start, end);
@@ -718,10 +720,10 @@ namespace Azimuth
             }
             else if (drawingWithLine)
             {
-                using (Graphics g = Graphics.FromImage(drawingImage))
+                using (var g = Graphics.FromImage(drawingImage))
                 {
                     g.Clear(System.Drawing.Color.Transparent);
-                    using (Pen pen = new Pen(btnColor.BackColor, 2))
+                    using (var pen = new Pen(btnColor.BackColor, 2))
                     {
                         PointF start = R2V(new PointF(startX, startY));
                         g.DrawLine(pen, start, end);
@@ -807,7 +809,7 @@ namespace Azimuth
             float z1 = SPHERE_RADIUS * (float) Math.Cos(phi1);
 
             // Compute the normal vector of two vectors defined by the 3D points.
-            Vector3D normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
+            var normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
 
             // Compute the coeficients of the plane Ax + By + Cz = 0 passing by the origin of the sphere. The geodesic curve is the intersection of this plane whith the sphere.
             float A = (float) normal.X;
@@ -833,10 +835,10 @@ namespace Azimuth
             }
 
             // Draw the curve points.
-            using (Graphics g = Graphics.FromImage(drawingImage))
+            using (var g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
-                using (Pen pen = new Pen(btnColor.BackColor, 2))
+                using (var pen = new Pen(btnColor.BackColor, 2))
                 {
                     g.DrawLines(pen, points);
                 }
@@ -849,20 +851,16 @@ namespace Azimuth
             // Compute the spherical coordinates of the first point.
             float theta0 = NormalizeRadians((float) ((p0.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2));
 
-            float phi0;
-            if (p0.Y >= center.Y)
-                phi0 = NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p0.Y - center.Y) * Math.PI / radiusX))));
-            else
-                phi0 = NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p0.Y) * Math.PI / radiusX))));
+            float phi0 = p0.Y >= center.Y
+                ? NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p0.Y - center.Y) * Math.PI / radiusX))))
+                : NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p0.Y) * Math.PI / radiusX))));
 
             // Compute the spherical coordinates of the second point.
             float theta1 = NormalizeRadians((float) ((p1.X - center.X + radiusX) * Math.PI / radiusX - 3 * Math.PI / 2));
 
-            float phi1;
-            if (p1.Y >= center.Y)
-                phi1 = NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p1.Y - center.Y) * Math.PI / radiusX))));
-            else
-                phi1 = NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p1.Y) * Math.PI / radiusX))));
+            float phi1 = p1.Y >= center.Y
+                ? NormalizeRadians((float) (2 * Math.Atan(Math.Exp((p1.Y - center.Y) * Math.PI / radiusX))))
+                : NormalizeRadians((float) (Math.PI - 2 * Math.Atan(Math.Exp((center.Y - p1.Y) * Math.PI / radiusX))));
 
             // Check the distances between the first angle and second angle and exchange the values if necessary. Its necessary for we get the minimal path.
             if (Math.Abs(theta0 + 2 * (float) Math.PI - theta1) < Math.Abs(theta1 - theta0))
@@ -893,14 +891,14 @@ namespace Azimuth
             float z1 = SPHERE_RADIUS * (float) Math.Cos(phi1);
 
             // Compute the normal vector of two vectors defined by the 3D points.
-            Vector3D normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
+            var normal = Vector3D.CrossProduct(new Vector3D(x0, y0, z0), new Vector3D(x1, y1, z1));
 
             // Compute the coeficients of the plane Ax + By + Cz = 0 passing by the origin of the sphere. The geodesic curve is the intersection of this plane whith the sphere.
             float A = (float) normal.X;
             float B = (float) normal.Y;
             float C = (float) normal.Z;
 
-            using (Graphics g = Graphics.FromImage(drawingImage))
+            using (var g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
             }
@@ -927,7 +925,7 @@ namespace Azimuth
 
                     if (Math.Abs(NormalizeRadians(theta, -3 * (float) Math.PI / 2) - NormalizeRadians(lastTheta, -3 * (float) Math.PI / 2)) > Math.PI)
                     {
-                        PointF[] _points = new PointF[i];
+                        var _points = new PointF[i];
                         Array.Copy(points, _points, i);
                         points = _points;
                         lastTheta = theta;
@@ -943,9 +941,9 @@ namespace Azimuth
                 if (points.Length > 1)
                 {
                     // Draw the curve points.
-                    using (Graphics g = Graphics.FromImage(drawingImage))
+                    using (var g = Graphics.FromImage(drawingImage))
                     {
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        using (var pen = new Pen(btnColor.BackColor, 2))
                         {
                             g.DrawLines(pen, points);
                         }
@@ -987,9 +985,9 @@ namespace Azimuth
                 PointF end = R2V(new PointF(e.X, e.Y));
                 if (start != end)
                 {
-                    using (Graphics g = Graphics.FromImage(foregroundImage))
+                    using (var g = Graphics.FromImage(foregroundImage))
                     {
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        using (var pen = new Pen(btnColor.BackColor, 2))
                         {
                             g.DrawLine(pen, start, end);
                         }
@@ -1004,20 +1002,20 @@ namespace Azimuth
             {
                 drawingWithLine = false;
 
-                using (Graphics g = Graphics.FromImage(drawingImage))
+                using (var g = Graphics.FromImage(drawingImage))
                 {
                     PointF start = R2V(new PointF(startX, startY));
                     PointF end = R2V(new PointF(e.X, e.Y));
                     if (start != end)
                     {
                         g.Clear(System.Drawing.Color.Transparent);
-                        using (Pen pen = new Pen(btnColor.BackColor, 2))
+                        using (var pen = new Pen(btnColor.BackColor, 2))
                         {
                             g.DrawLine(pen, start, end);
                         }
                     }
 
-                    using (Graphics g2 = Graphics.FromImage(foregroundImage))
+                    using (var g2 = Graphics.FromImage(foregroundImage))
                     {
                         g2.DrawImage(drawingImage, new PointF(0, 0));
                     }
@@ -1048,12 +1046,12 @@ namespace Azimuth
                     }
                 }
 
-                using (Graphics g = Graphics.FromImage(foregroundImage))
+                using (var g = Graphics.FromImage(foregroundImage))
                 {
                     g.DrawImage(drawingImage, new PointF(0, 0));
                 }
 
-                using (Graphics g = Graphics.FromImage(drawingImage))
+                using (var g = Graphics.FromImage(drawingImage))
                 {
                     g.Clear(System.Drawing.Color.Transparent);
                 }
@@ -1126,12 +1124,12 @@ namespace Azimuth
 
         private void btnClear_Click(object sender, EventArgs e)
         {
-            using (Graphics g = Graphics.FromImage(drawingImage))
+            using (var g = Graphics.FromImage(drawingImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
             }
 
-            using (Graphics g = Graphics.FromImage(foregroundImage))
+            using (var g = Graphics.FromImage(foregroundImage))
             {
                 g.Clear(System.Drawing.Color.Transparent);
             }

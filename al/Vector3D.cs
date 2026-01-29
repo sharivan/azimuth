@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Azimuth.al
 {
@@ -17,29 +13,11 @@ namespace Azimuth.al
         private double y;
         private double z;
 
-        public double X
-        {
-            get
-            {
-                return x;
-            }
-        }
+        public double X => x;
 
-        public double Y
-        {
-            get
-            {
-                return y;
-            }
-        }
+        public double Y => y;
 
-        public double Z
-        {
-            get
-            {
-                return z;
-            }
-        }
+        public double Z => z;
 
         public Vector3D(double x, double y, double z)
         {
@@ -58,13 +36,13 @@ namespace Azimuth.al
         public Vector3D ToSpherical()
         {
             double length = Length();
-            return new Vector3D(length, (double)Math.Atan2(y, x), length == 0 ? 0F : (double) Math.Acos(z / length));
+            return new Vector3D(length, (double) Math.Atan2(y, x), length == 0 ? 0F : (double) Math.Acos(z / length));
         }
 
         public Vector3D ToRectangular()
         {
             double sinPhi = (double) Math.Sin(z);
-            return new Vector3D((double)(x * Math.Cos(y) * sinPhi), (double)(x * Math.Sin(y) * sinPhi), (double)(x * Math.Cos(z)));
+            return new Vector3D((double) (x * Math.Cos(y) * sinPhi), (double) (x * Math.Sin(y) * sinPhi), (double) (x * Math.Cos(z)));
         }
 
         public double Length2()
@@ -74,7 +52,7 @@ namespace Azimuth.al
 
         public double Length()
         {
-            return (double)Math.Sqrt(Length2());
+            return (double) Math.Sqrt(Length2());
         }
 
         public double DistanceTo(Vector3D other)
@@ -89,10 +67,7 @@ namespace Azimuth.al
 
         public bool Equals(Vector3D other, double epslon = 0)
         {
-            if (epslon == 0)
-                return x == other.x && y == other.y && z == other.z;
-
-            return DistanceTo(other) <= epslon;
+            return epslon == 0 ? x == other.x && y == other.y && z == other.z : DistanceTo(other) <= epslon;
         }
 
         public override string ToString()
@@ -113,20 +88,17 @@ namespace Azimuth.al
         public Vector3D Versor()
         {
             double length = Length();
-            if (length == 0)
-                return O;
-
-            return this / length;
+            return length == 0 ? O : this / length;
         }
 
         public Vector3D Rotate(double alpha, double beta, double gamma)
         {
-            double ca = (double)Math.Cos(alpha);
-            double sa = (double)Math.Sin(alpha);
-            double cb = (double)Math.Cos(beta);
-            double sb = (double)Math.Sin(beta);
-            double cg = (double)Math.Cos(gamma);
-            double sg = (double)Math.Sin(gamma);
+            double ca = (double) Math.Cos(alpha);
+            double sa = (double) Math.Sin(alpha);
+            double cb = (double) Math.Cos(beta);
+            double sb = (double) Math.Sin(beta);
+            double cg = (double) Math.Cos(gamma);
+            double sg = (double) Math.Sin(gamma);
             return new Vector3D
                 (
                     (ca * cg - sa * cb * sg) * x + (sa * cg + ca * cb * sg) * y + sb * sg * z,

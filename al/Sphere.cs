@@ -1,41 +1,27 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Azimuth.al
 {
     public class Sphere
     {
         private Vector3D center;
-        private double radius;
 
-        public Vector3D Center
-        {
-            get
-            {
-                return center;
-            }
-        }
+        public Vector3D Center => center;
 
         public double Radius
         {
-            get
-            {
-                return radius;
-            }
+            get;
         }
 
         public Sphere(Vector3D center, double radius)
         {
             this.center = center;
-            this.radius = radius;
+            Radius = radius;
         }
 
         public override string ToString()
         {
-            return "{c=" + center + " r=" + radius + "}";
+            return "{c=" + center + " r=" + Radius + "}";
         }
 
         public bool IntersectWithRay(Vector3D orig, Vector3D dir, out double t)
@@ -43,7 +29,7 @@ namespace Azimuth.al
             double t0, t1; // solutions for t if the ray intersects 
 
             // geometric solution
-            Vector3D L = center - orig; 
+            Vector3D L = center - orig;
             double tca = L.Dot(dir);
             if (tca < 0)
             {
@@ -51,7 +37,7 @@ namespace Azimuth.al
                 return false;
             }
 
-            double radius2 = radius * radius;
+            double radius2 = Radius * Radius;
             double d2 = L.Dot(L) - tca * tca;
             if (d2 > radius2)
             {
@@ -59,15 +45,13 @@ namespace Azimuth.al
                 return false;
             }
 
-            double thc = (double) Math.Sqrt(radius2 - d2); 
-            t0 = tca - thc; 
-            t1 = tca + thc; 
+            double thc = (double) Math.Sqrt(radius2 - d2);
+            t0 = tca - thc;
+            t1 = tca + thc;
 
             if (t0 > t1)
             {
-                double temp = t0;
-                t0 = t1;
-                t1 = temp;
+                (t1, t0) = (t0, t1);
             }
 
             if (t0 < 0)

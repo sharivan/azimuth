@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Azimuth
@@ -13,11 +6,10 @@ namespace Azimuth
     public partial class frmProjectionTypeDialog : Form
     {
         private ProjectionType projectionType;
-        private string fileName;
 
         public ProjectionType ProjectionType
         {
-            get { return projectionType; }
+            get => projectionType;
             set
             {
                 projectionType = value;
@@ -27,7 +19,8 @@ namespace Azimuth
 
         public string FileName
         {
-            get { return fileName; }
+            get;
+            private set;
         }
 
         public frmProjectionTypeDialog()
@@ -40,7 +33,7 @@ namespace Azimuth
         private void btnOpen_Click(object sender, EventArgs e)
         {
             DialogResult = openFileDlg.ShowDialog();
-            fileName = openFileDlg.FileName;
+            FileName = openFileDlg.FileName;
             projectionType = (ProjectionType) cmbProjectionType.SelectedIndex;
             Hide();
         }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Azimuth.al
 {
@@ -15,21 +11,9 @@ namespace Azimuth.al
         private double x;
         private double y;
 
-        public double X
-        {
-            get
-            {
-                return x;
-            }
-        }
+        public double X => x;
 
-        public double Y
-        {
-            get
-            {
-                return y;
-            }
-        }
+        public double Y => y;
 
         public Vector2D(double x, double y)
         {
@@ -64,7 +48,7 @@ namespace Azimuth.al
             if (!(obj is Vector2D))
                 return false;
 
-            Vector2D other = (Vector2D)obj;
+            var other = (Vector2D) obj;
             return Equals(other);
         }
 
@@ -75,12 +59,12 @@ namespace Azimuth.al
 
         public double Length()
         {
-            return (double)Math.Sqrt(Length2());
+            return (double) Math.Sqrt(Length2());
         }
 
         public double Angle()
         {
-            return (double)Math.Atan2(y, x);
+            return (double) Math.Atan2(y, x);
         }
 
         public double DistanceTo(Vector2D other)
@@ -95,10 +79,7 @@ namespace Azimuth.al
 
         public bool Equals(Vector2D other, double epslon = 0)
         {
-            if (epslon == 0)
-                return x == other.x && y == other.y;
-
-            return DistanceTo(other) <= epslon;
+            return epslon == 0 ? x == other.x && y == other.y : DistanceTo(other) <= epslon;
         }
 
         public override string ToString()
@@ -119,7 +100,7 @@ namespace Azimuth.al
         public Vector2D Rotate(double angle)
         {
             double c = (double) Math.Cos(angle);
-            double s = (double)Math.Sin(angle);
+            double s = (double) Math.Sin(angle);
             return new Vector2D(x * c - y * s, x * s + y * c);
         }
 
@@ -136,10 +117,7 @@ namespace Azimuth.al
         public Vector2D Versor()
         {
             double length = Length2();
-            if (length == 0)
-                return O;
-
-            return this / length;
+            return length == 0 ? O : this / length;
         }
 
         public static bool operator ==(Vector2D left, Vector2D right)
